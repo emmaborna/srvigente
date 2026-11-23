@@ -1,0 +1,359 @@
+/* GENERAL */
+body {
+    margin: 0;
+    background: #ffffff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #203b35;
+}
+
+/* BARRA SUPERIOR */
+.navbar {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e5eae8 !important;
+    padding: 12px 20px;
+}
+
+.navbar-brand {
+    color: #203b35 !important;
+    font-family: Georgia, serif;
+    font-weight: bold;
+}
+
+.nav-link {
+    color: #536c65 !important;
+    font-weight: 600;
+}
+
+.nav-link:hover {
+    color: #08c9ae !important;
+}
+
+.navbar-toggler {
+    border-color: #08c9ae;
+}
+
+.navbar .form-control {
+    width: 190px;
+    border-radius: 10px;
+    border: 1px solid #dce5e1;
+}
+
+.navbar .btn {
+    border-radius: 10px;
+    color: #536c65;
+    border-color: #dce5e1;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.navbar .btn:hover {
+    background: #f2f6f4;
+    color: #203b35;
+}
+
+.navbar .dropdown-toggle::after {
+    display: none;
+}
+
+/* MENU LATERAL */
+#barra-lateral {
+    display: flex;
+    flex-direction: column;
+    background-color: #08c9ae;
+    width: 258px !important;
+    flex-shrink: 0;
+    min-height: calc(100vh - 63px);
+    padding: 30px 19px;
+}
+
+#marca {
+    padding: 0 8px;
+}
+
+#logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: #ffffff;
+    border-radius: 12px;
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: bold;
+    color: #203b35;
+}
+
+#marca-nombre {
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: 15px;
+    color: #173f39;
+}
+
+#lema {
+    padding: 0 8px;
+    margin: 12px 0 35px;
+    font-size: 14px;
+    color: #173f39;
+}
+
+#barra-lateral button {
+    background: transparent;
+    color: #173f39;
+    border: none;
+    padding: 13px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+#barra-lateral button:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+#barra-lateral button.active {
+    background: #ffffff;
+    color: #203b35;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+#pie-lateral {
+    margin: auto 8px 0;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.6);
+    font-size: 14px;
+    color: #173f39;
+}
+
+/* CONTENIDO PRINCIPAL */
+#centro {
+    background: #ffffff;
+    padding: 35px;
+}
+
+main {
+    max-width: 905px;
+    margin: auto;
+}
+
+#encabezado {
+    padding-top: 20px;
+}
+
+/* TITULOS */
+h6 {
+    color: #627b73 !important;
+    font-size: 14px;
+    letter-spacing: 3px;
+    font-weight: bold;
+}
+
+h1 {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: #203b35;
+    margin-top: 10px;
+}
+
+#encabezado p {
+    margin: 0;
+    font-size: 14px;
+    color: #627b73;
+}
+
+hr {
+    margin: 25px 0;
+    color: #dce6e1;
+    opacity: 1;
+}
+
+h3 {
+    font-size: 20px;
+    font-weight: bold;
+    color: #203b35;
+    margin-top: 30px;
+}
+
+/* BUSCADOR */
+#Busqueda {
+    position: relative;
+    margin-top: 25px;
+    width: 100%;
+}
+
+#Busqueda svg {
+    position: absolute;
+    top: 50%;
+    left: 18px;
+    transform: translateY(-50%);
+    color: #536c65;
+}
+
+#Busqueda input {
+    background: #ffffff;
+    border: 1px solid #dce6e1;
+    border-radius: 13px;
+    padding: 15px 15px 15px 48px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+#Busqueda input:focus {
+    border-color: #08c9ae;
+    box-shadow: 0 0 0 3px rgba(8,201,174,0.12);
+}
+
+/* BOTONES */
+.btn-primary {
+    background: #08c9ae !important;
+    border: none !important;
+    color: #173f39 !important;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-weight: bold;
+}
+
+.btn-primary:hover {
+    background: #06b69e !important;
+}
+
+/* TAREAS */
+.form-check-input:checked {
+    background-color: #08c9ae;
+    border-color: #08c9ae;
+}
+
+.fecha {
+    font-size: 13px;
+    color: #627b73;
+    white-space: nowrap;
+}
+
+.fecha-hoy {
+    color: #06b69e;
+    font-weight: bold;
+}
+
+.fecha-vencida {
+    color: #d9534f;
+    font-weight: bold;
+}
+
+.btn-eliminar {
+    border: none;
+    color: #627b73;
+}
+
+.btn-eliminar:hover {
+    color: #d9534f;
+}
+
+.titulo-proyecto {
+    margin-top: 20px;
+    font-weight: bold;
+    color: #203b35;
+}
+
+/* VENTANA NUEVA TAREA */
+.modal-content {
+    border-radius: 16px;
+    border: none;
+}
+
+.modal .form-control {
+    border-radius: 12px;
+    border: 1px solid #dce6e1;
+    padding: 12px;
+}
+
+/* RESUMEN */
+.tarjeta {
+    border: 1px solid #dce6e1;
+    border-radius: 13px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    color: #627b73;
+}
+
+.tarjeta-numero {
+    font-size: 32px;
+    font-weight: bold;
+    color: #203b35;
+}
+
+.progress {
+    height: 10px;
+    border-radius: 10px;
+}
+
+.progress-bar {
+    background-color: #08c9ae;
+}
+
+/* PERFIL */
+#avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background: #08c9ae;
+    border-radius: 50%;
+    font-family: Georgia, serif;
+    font-size: 28px;
+    font-weight: bold;
+    color: #173f39;
+}
+
+#perfil-formulario {
+    max-width: 420px;
+}
+
+#perfil-formulario .form-control {
+    border-radius: 12px;
+    border: 1px solid #dce6e1;
+    padding: 12px;
+}
+
+/* ESTADO VACIO */
+#vacio {
+    padding: 60px 0;
+}
+
+#vacio-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: #e6f9f5;
+    border-radius: 16px;
+    color: #173f39;
+}
+
+#vacio-titulo {
+    margin: 15px 0 5px;
+    font-weight: bold;
+    color: #203b35;
+}
+
+#vacio-texto {
+    font-size: 14px;
+    color: #627b73;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    #barra-lateral {
+        width: 190px !important;
+    }
+
+    #centro {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 16px;
+    }
+}
