@@ -1,6 +1,7 @@
 // ===== Datos =====
 let tareas = [];
 let vista = "bandeja";
+let indiceEditar = -1;
 
 let titulos = {
     bandeja: "Bandeja de entrada",
@@ -12,12 +13,16 @@ let titulos = {
     perfil: "Perfil"
 };
 
-// ===== Guardar y cargar (localStorage) =====
+// ===== Guardar y cargar =====
 function cargarDatos() {
     let guardado = localStorage.getItem("tareas");
 
     if (guardado !== null) {
-        tareas = JSON.parse(guardado);
+        try {
+            tareas = JSON.parse(guardado);
+        } catch (error) {
+            tareas = [];
+        }
     }
 }
 
@@ -26,24 +31,15 @@ function guardarDatos() {
 }
 
 // ===== Fechas =====
-// Las fechas se guardan como "2026-11-23" (así las entrega el campo date)
 function formatoFecha(d) {
-    let mes = d.getMonth() + 1;
-    let dia = d.getDate();
-
-    if (mes < 10) {
-        mes = "0" + mes;
-    }
-    if (dia < 10) {
-        dia = "0" + dia;
-    }
+    let mes = String(d.getMonth() + 1).padStart(2, "0");
+    let dia = String(d.getDate()).padStart(2, "0");
 
     return d.getFullYear() + "-" + mes + "-" + dia;
 }
 
 function fechaHoy() {
-    let d = new Date();
-    return formatoFecha(d);
+    return formatoFecha(new Date());
 }
 
 function fechaManana() {
@@ -52,80 +48,53 @@ function fechaManana() {
     return formatoFecha(d);
 }
 
-// Convierte 2026-11-23 en 23/11/2026
 function formatoBonito(fecha) {
-    if (fecha == "") {
-        return "Sin fecha";
-    }
+    if (!fecha) return "Sin fecha";
 
     let partes = fecha.split("-");
     return partes[2] + "/" + partes[1] + "/" + partes[0];
 }
 
 function textoFecha(fecha) {
-    if (fecha == "") {
-        return "Sin fecha";
-    }
-    if (fecha == fechaHoy()) {
-        return "Hoy";
-    }
-    if (fecha == fechaManana()) {
-        return "Mañana";
-    }
-    if (fecha < fechaHoy()) {
-        return "Vencida · " + formatoBonito(fecha);
-    }
+    if (!fecha) return "Sin fecha";
+    if (fecha === fechaHoy()) return "Hoy";
+    if (fecha === fechaManana()) return "Mañana";
+    if (fecha < fechaHoy()) return "Vencida · " + formatoBonito(fecha);
+
     return formatoBonito(fecha);
 }
 
-// Ordena las tareas por fecha (las que no tienen fecha van al final)
 function ordenar() {
-    tareas.sort(function (a, b) {
-        let fa = a.fecha;
-        let fb = b.fecha;
+    tareas.sort(function(a, b) {
+        let fa = a.fecha || "9999-99-99";
+        let fb = b.fecha || "9999-99-99";
 
-        if (fa == "") {
-            fa = "9999-99-99";
-        }
-        if (fb == "") {
-            fb = "9999-99-99";
-        }
-
-        if (fa < fb) {
-            return -1;
-        }
-        if (fa > fb) {
-            return 1;
-        }
-        return 0;
+        return fa.localeCompare(fb);
     });
 }
 
 // ===== Funciones de ayuda =====
 function ver(id, visible) {
-    if (visible) {
-        document.getElementById(id).style.display = "block";
-    } else {
-        document.getElementById(id).style.display = "none";
+    let el = document.getElementById(id);
+    if (el) {
+        el.style.display = visible ? "block" : "none";
     }
 }
 
-// Evita que el texto escrito se convierta en etiquetas HTML
 function limpiar(texto) {
-    return texto.replace(/</g, "&lt;");
+    return String(texto ?? "").replace(/[&<>"']/g, function(c) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[c];
+    });
 }
 
-// Cuenta las tareas completadas (true) o pendientes (false)
 function contar(completada) {
-    let total = 0;
-
-    for (let i = 0; i < tareas.length; i++) {
-        if (tareas[i].completada == completada) {
-            total++;
-        }
-    }
-
-    return total;
+    return tareas.filter(t => t.completada === completada).length;
 }
 
 function llenarSugerencias() {
@@ -135,10 +104,12 @@ function llenarSugerencias() {
         opciones += '<option value="' + limpiar(tareas[i].texto) + '">';
     }
 
-    document.getElementById("datalistOptions").innerHTML = opciones;
+    let datalist = document.getElementById("datalistOptions");
+    if (datalist) {
+        datalist.innerHTML = opciones;
+    }
 }
 
-// Guarda, actualiza las sugerencias y vuelve a dibujar la vista actual
 function actualizar() {
     guardarDatos();
     llenarSugerencias();
@@ -146,108 +117,139 @@ function actualizar() {
 }
 
 function mostrarVista() {
-    if (vista == "resumen") {
+    if (vista === "resumen") {
         mostrarResumen();
-    } else if (vista == "perfil") {
+    } else if (vista === "perfil") {
         mostrarPerfil();
     } else {
         mostrarTareas();
     }
 }
 
-// ===== Lista de tareas =====
-// Dice si una tarea se debe mostrar en la vista actual
+// ===== Mostrar tareas =====
 function debeMostrarse(tarea) {
     let hoy = fechaHoy();
-    let buscado = document.getElementById("exampleDataList").value.toLowerCase();
+    let inputBuscar = document.getElementById("exampleDataList");
+    let buscado = inputBuscar ? inputBuscar.value.toLowerCase() : "";
 
-    if (buscado != "" && tarea.texto.toLowerCase().indexOf(buscado) == -1) {
+    if (buscado !== "" &&
+        !tarea.texto.toLowerCase().includes(buscado)) {
         return false;
     }
 
-    if (vista == "completadas") {
+    if (vista === "completadas") {
         return tarea.completada;
     }
 
-    if (tarea.completada) {
-        return false;
+    if (tarea.completada) return false;
+
+    if (vista === "hoy") {
+        return tarea.fecha !== "" && tarea.fecha <= hoy;
     }
 
-    if (vista == "hoy") {
-        // Hoy muestra lo de hoy y lo que ya venció
-        return tarea.fecha != "" && tarea.fecha <= hoy;
-    }
-
-    if (vista == "proximo") {
+    if (vista === "proximo") {
         return tarea.fecha > hoy;
     }
 
     return true;
 }
 
-// Crea el HTML de una tarea (i es su posición en la lista)
+// ===== Crear fila de tarea =====
 function crearFila(i) {
     let tarea = tareas[i];
-    let hoy = fechaHoy();
 
-    let marcada = "";
-    let estilo = "";
-    if (tarea.completada) {
-        marcada = "checked";
-        estilo = " text-decoration-line-through text-muted";
-    }
+    let estilo = tarea.completada
+        ? "text-decoration-line-through text-muted"
+        : "";
+
+    let textoDeFecha = tarea.completada
+        ? formatoBonito(tarea.fecha)
+        : textoFecha(tarea.fecha);
 
     let claseFecha = "fecha";
-    let textoDeFecha = formatoBonito(tarea.fecha);
-    if (!tarea.completada) {
-        textoDeFecha = textoFecha(tarea.fecha);
-        if (tarea.fecha != "" && tarea.fecha < hoy) {
-            claseFecha = "fecha fecha-vencida";
-        }
-        if (tarea.fecha == hoy) {
-            claseFecha = "fecha fecha-hoy";
-        }
+
+    if (!tarea.completada && tarea.fecha !== "" &&
+        tarea.fecha < fechaHoy()) {
+        claseFecha += " fecha-vencida";
+    }
+
+    if (!tarea.completada && tarea.fecha === fechaHoy()) {
+        claseFecha += " fecha-hoy";
     }
 
     let proyecto = "";
-    if (vista != "proyectos" && tarea.proyecto != "Sin proyecto") {
-        proyecto = '<span class="text-muted small">' + limpiar(tarea.proyecto) + '</span>';
+
+    if (tarea.proyecto && tarea.proyecto !== "Sin proyecto") {
+        proyecto = '<span class="text-muted small">' +
+            limpiar(tarea.proyecto) + '</span>';
     }
 
-    return '<div class="d-flex align-items-center gap-2 border-bottom py-2">' +
-        '<input type="checkbox" class="form-check-input mt-0" ' + marcada + ' onclick="completar(' + i + ')">' +
-        '<span class="flex-grow-1' + estilo + '">' + limpiar(tarea.texto) + '</span>' +
-        proyecto +
-        '<span class="' + claseFecha + '">' + textoDeFecha + '</span>' +
-        '<button type="button" class="btn btn-sm btn-eliminar" onclick="eliminar(' + i + ')">✕</button>' +
-        '</div>';
+    return `
+        <div class="d-flex align-items-center gap-2 border-bottom py-2 flex-wrap">
+
+            <span class="flex-grow-1 ${estilo}">
+                ${limpiar(tarea.texto)}
+            </span>
+
+            ${proyecto}
+
+            <span class="${claseFecha}">
+                ${textoDeFecha}
+            </span>
+
+            <button type="button"
+                class="btn btn-sm btn-warning"
+                onclick="editarTarea(${i})">
+                Editar
+            </button>
+
+            <button type="button"
+                class="btn btn-sm btn-success"
+                onclick="completar(${i})">
+                ${tarea.completada ? "Pendiente" : "Completado"}
+            </button>
+
+            <button type="button"
+                class="btn btn-sm btn-danger"
+                onclick="eliminar(${i})">
+                Eliminar
+            </button>
+
+        </div>
+    `;
 }
 
+// ===== Mostrar lista =====
 function mostrarTareas() {
     let html = "";
     let total = 0;
 
-    if (vista == "proyectos") {
-        // Primero buscamos los nombres de los proyectos
+    if (vista === "proyectos") {
         let nombres = [];
+
         for (let i = 0; i < tareas.length; i++) {
-            if (!tareas[i].completada && nombres.indexOf(tareas[i].proyecto) == -1) {
+            if (!tareas[i].completada &&
+                !nombres.includes(tareas[i].proyecto)) {
                 nombres.push(tareas[i].proyecto);
             }
         }
+
         nombres.sort();
 
-        // Después mostramos las tareas de cada proyecto
         for (let p = 0; p < nombres.length; p++) {
             let filas = "";
+
             for (let i = 0; i < tareas.length; i++) {
-                if (tareas[i].proyecto == nombres[p] && debeMostrarse(tareas[i])) {
+                if (tareas[i].proyecto === nombres[p] &&
+                    debeMostrarse(tareas[i])) {
                     filas += crearFila(i);
                     total++;
                 }
             }
-            if (filas != "") {
-                html += '<div class="titulo-proyecto">' + limpiar(nombres[p]) + '</div>' + filas;
+
+            if (filas !== "") {
+                html += '<div class="titulo-proyecto">' +
+                    limpiar(nombres[p]) + '</div>' + filas;
             }
         }
     } else {
@@ -262,79 +264,157 @@ function mostrarTareas() {
     document.getElementById("lista-tareas").innerHTML = html;
     document.getElementById("contar").textContent = total;
 
-    if (total == 1) {
-        document.getElementById("palabra").textContent = "tarea";
-    } else {
-        document.getElementById("palabra").textContent = "tareas";
-    }
+    document.getElementById("palabra").textContent =
+        total === 1 ? "tarea" : "tareas";
 
-    if (vista == "completadas") {
-        document.getElementById("vacio-texto").textContent = "Aún no has completado ninguna tarea.";
-    } else {
-        document.getElementById("vacio-texto").textContent = "Añade una tarea para empezar a organizar tu día.";
-    }
+    document.getElementById("vacio-texto").textContent =
+        vista === "completadas"
+        ? "Aún no has completado ninguna tarea."
+        : "Añade una tarea para empezar a organizar tu día.";
 
-    ver("vacio", total == 0);
+    ver("vacio", total === 0);
 }
 
+// ===== Completar tarea =====
 function completar(i) {
-    if (tareas[i].completada) {
-        tareas[i].completada = false;
-    } else {
-        tareas[i].completada = true;
-    }
+    tareas[i].completada = !tareas[i].completada;
     actualizar();
 }
 
+// ===== Eliminar tarea =====
 function eliminar(i) {
-    tareas.splice(i, 1);
-    actualizar();
+    if (confirm("¿Deseas eliminar esta tarea?")) {
+        tareas.splice(i, 1);
+        actualizar();
+    }
 }
 
-// ===== Nueva tarea =====
+// ===== Limpiar formulario =====
 function limpiarFormulario() {
+    indiceEditar = -1;
+
     document.getElementById("tarea-nombre").value = "";
     document.getElementById("tarea-fecha").value = fechaHoy();
     document.getElementById("tarea-proyecto").value = "";
+
+    let tituloModal = document.querySelector("#modalTarea .modal-title");
+    if (tituloModal) {
+        tituloModal.textContent = "Nueva tarea";
+    }
+
+    let btnGuardar = document.querySelector("#modalTarea .modal-footer .btn-primary, #modalTarea .modal-footer button:last-child");
+    if (btnGuardar) {
+        btnGuardar.textContent = "Guardar tarea";
+        btnGuardar.setAttribute("onclick", "guardarCambios()");
+    }
 }
 
+// ===== Nueva tarea =====
 function guardarTarea() {
     let nombre = document.getElementById("tarea-nombre").value.trim();
     let fecha = document.getElementById("tarea-fecha").value;
     let proyecto = document.getElementById("tarea-proyecto").value.trim();
 
-    if (nombre !== "") {
-        if (proyecto == "") {
-            proyecto = "Sin proyecto";
-        }
-
-        let tarea = {
-            texto: nombre,
-            fecha: fecha,
-            proyecto: proyecto,
-            completada: false
-        };
-
-        tareas.push(tarea);
-        ordenar();
-
-        bootstrap.Modal.getInstance(document.getElementById("modalTarea")).hide();
-
-        document.getElementById("exampleDataList").value = "";
-        document.getElementById("buscar-nav").value = "";
-        cambiarVista("bandeja");
-        actualizar();
-    } else {
+    if (nombre === "") {
         alert("Escribe el nombre de la tarea");
+        return;
     }
+
+    if (proyecto === "") proyecto = "Sin proyecto";
+
+    tareas.push({
+        texto: nombre,
+        fecha: fecha,
+        proyecto: proyecto,
+        completada: false
+    });
+
+    ordenar();
+
+    let modalEl = document.getElementById("modalTarea");
+    let modalInstancia = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+    modalInstancia.hide();
+
+    let inputDataList = document.getElementById("exampleDataList");
+    let inputBuscarNav = document.getElementById("buscar-nav");
+    if (inputDataList) inputDataList.value = "";
+    if (inputBuscarNav) inputBuscarNav.value = "";
+
+    limpiarFormulario();
+    cambiarVista("bandeja");
+    actualizar();
+}
+
+// ===== EDITAR TAREA =====
+function editarTarea(i) {
+    if (!tareas[i]) return;
+
+    indiceEditar = i;
+    let tarea = tareas[i];
+
+    document.getElementById("tarea-nombre").value = tarea.texto;
+    document.getElementById("tarea-fecha").value = tarea.fecha || "";
+    document.getElementById("tarea-proyecto").value =
+        tarea.proyecto === "Sin proyecto" ? "" : tarea.proyecto;
+
+    let tituloModal = document.querySelector("#modalTarea .modal-title");
+    if (tituloModal) {
+        tituloModal.textContent = "Editar tarea";
+    }
+
+    let btnGuardar = document.querySelector("#modalTarea .modal-footer .btn-primary, #modalTarea .modal-footer button:last-child");
+    if (btnGuardar) {
+        btnGuardar.textContent = "Guardar cambios";
+        btnGuardar.setAttribute("onclick", "guardarCambios()");
+    }
+
+    let modal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById("modalTarea")
+    );
+    modal.show();
+}
+
+// ===== GUARDAR CAMBIOS =====
+function guardarCambios() {
+    if (indiceEditar === -1 || !tareas[indiceEditar]) {
+        guardarTarea();
+        return;
+    }
+
+    let nombre = document.getElementById("tarea-nombre").value.trim();
+    let fecha = document.getElementById("tarea-fecha").value;
+    let proyecto = document.getElementById("tarea-proyecto").value.trim();
+
+    if (nombre === "") {
+        alert("Escribe el nombre de la tarea");
+        return;
+    }
+
+    if (proyecto === "") proyecto = "Sin proyecto";
+
+    tareas[indiceEditar].texto = nombre;
+    tareas[indiceEditar].fecha = fecha;
+    tareas[indiceEditar].proyecto = proyecto;
+
+    ordenar();
+
+    let modalEl = document.getElementById("modalTarea");
+    let modalInstancia = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+    modalInstancia.hide();
+
+    limpiarFormulario();
+    actualizar();
 }
 
 // ===== Buscar =====
 function buscar(valor) {
-    document.getElementById("exampleDataList").value = valor;
-    document.getElementById("buscar-nav").value = valor;
+    let inputDataList = document.getElementById("exampleDataList");
+    let inputBuscarNav = document.getElementById("buscar-nav");
 
-    if (vista == "resumen" || vista == "perfil") {
+    if (inputDataList) inputDataList.value = valor;
+    if (inputBuscarNav) inputBuscarNav.value = valor;
+
+    if (vista === "resumen" || vista === "perfil") {
         cambiarVista("bandeja");
     } else {
         mostrarTareas();
@@ -355,20 +435,18 @@ function mostrarResumen() {
         } else {
             pendientes++;
 
-            if (tareas[i].fecha == hoy) {
-                paraHoy++;
-            }
-            if (tareas[i].fecha != "" && tareas[i].fecha < hoy) {
+            if (tareas[i].fecha === hoy) paraHoy++;
+
+            if (tareas[i].fecha !== "" && tareas[i].fecha < hoy) {
                 vencidas++;
             }
         }
     }
 
     let total = pendientes + completadas;
-    let porcentaje = 0;
-    if (total > 0) {
-        porcentaje = Math.round(completadas * 100 / total);
-    }
+    let porcentaje = total > 0
+        ? Math.round(completadas * 100 / total)
+        : 0;
 
     document.getElementById("res-pendientes").textContent = pendientes;
     document.getElementById("res-hoy").textContent = paraHoy;
@@ -386,6 +464,7 @@ function guardarPerfil() {
     if (nombre !== "") {
         localStorage.setItem("perfilNombre", nombre);
         localStorage.setItem("perfilCorreo", correo);
+
         alert("Perfil guardado correctamente");
         mostrarPerfil();
     } else {
@@ -394,73 +473,64 @@ function guardarPerfil() {
 }
 
 function mostrarPerfil() {
-    let nombre = localStorage.getItem("perfilNombre");
-    let correo = localStorage.getItem("perfilCorreo");
-
-    if (nombre === null) {
-        nombre = "";
-    }
-    if (correo === null) {
-        correo = "";
-    }
+    let nombre = localStorage.getItem("perfilNombre") || "";
+    let correo = localStorage.getItem("perfilCorreo") || "";
 
     document.getElementById("perfil-nombre").value = nombre;
     document.getElementById("perfil-correo").value = correo;
 
-    if (nombre !== "") {
-        document.getElementById("avatar").textContent = nombre.charAt(0).toUpperCase();
-        document.getElementById("perfil-saludo").textContent = "Hola, " + nombre;
-    } else {
-        document.getElementById("avatar").textContent = "?";
-        document.getElementById("perfil-saludo").textContent = "Hola";
-    }
+    document.getElementById("avatar").textContent =
+        nombre ? nombre.charAt(0).toUpperCase() : "?";
+
+    document.getElementById("perfil-saludo").textContent =
+        nombre ? "Hola, " + nombre : "Hola";
 
     document.getElementById("perfil-datos").textContent =
-        "Tienes " + contar(false) + " tareas pendientes y " + contar(true) + " completadas.";
+        "Tienes " + contar(false) + " tareas pendientes y " +
+        contar(true) + " completadas.";
 }
 
-// ===== Cambiar de vista =====
+// ===== Cambiar vista =====
 function cambiarVista(nueva) {
     vista = nueva;
-    document.querySelector("h1").textContent = titulos[vista];
 
-    // Marcar el botón activo de la barra lateral
+    let h1 = document.querySelector("h1");
+    if (h1) {
+        h1.textContent = titulos[vista];
+    }
+
     let botones = ["bandeja", "hoy", "proximo", "completadas", "perfil"];
+
     for (let i = 0; i < botones.length; i++) {
-        document.getElementById("btn-" + botones[i]).classList.remove("active");
+        let btn = document.getElementById("btn-" + botones[i]);
+        if (btn) btn.classList.remove("active");
     }
 
     let activo = document.getElementById("btn-" + vista);
+
     if (activo !== null) {
         activo.classList.add("active");
     }
 
-    // Mostrar solo la sección que corresponde
-    let esLista = vista != "resumen" && vista != "perfil";
+    let esLista = vista !== "resumen" && vista !== "perfil";
+
     ver("seccion-tareas", esLista);
     ver("conteo", esLista);
-    ver("seccion-resumen", vista == "resumen");
-    ver("seccion-perfil", vista == "perfil");
+    ver("seccion-resumen", vista === "resumen");
+    ver("seccion-perfil", vista === "perfil");
 
     mostrarVista();
 }
 
-// ===== Menú Opciones =====
+// ===== Borrar completadas =====
 function borrarCompletadas() {
     if (confirm("¿Borrar todas las tareas completadas?")) {
-        let nuevas = [];
-
-        for (let i = 0; i < tareas.length; i++) {
-            if (!tareas[i].completada) {
-                nuevas.push(tareas[i]);
-            }
-        }
-
-        tareas = nuevas;
+        tareas = tareas.filter(t => !t.completada);
         actualizar();
     }
 }
 
+// ===== Borrar todas =====
 function borrarTodas() {
     if (confirm("¿Borrar todas las tareas?")) {
         tareas = [];
@@ -468,7 +538,7 @@ function borrarTodas() {
     }
 }
 
-// ===== Ejemplo: guardar y mostrar un nombre =====
+// ===== Guardar nombre =====
 function guardar() {
     let nombre = document.getElementById("nombre").value;
 
@@ -491,6 +561,15 @@ function mostrar() {
 }
 
 // ===== Al abrir la página =====
-cargarDatos();
-llenarSugerencias();
-cambiarVista("bandeja");
+document.addEventListener("DOMContentLoaded", function () {
+    let modalEl = document.getElementById("modalTarea");
+    if (modalEl) {
+        modalEl.addEventListener("hidden.bs.modal", function () {
+            limpiarFormulario();
+        });
+    }
+
+    cargarDatos();
+    llenarSugerencias();
+    cambiarVista("bandeja");
+});
